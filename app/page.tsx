@@ -60,15 +60,27 @@ export default function NexPlay() {
           fetch("/api/library"),
           fetch("/api/wishlist"),
         ]);
+
+        if (!gamesRes.ok) throw new Error("Games API error: " + gamesRes.status);
+        if (!libraryRes.ok) throw new Error("Library API error: " + libraryRes.status);
+        if (!wishlistRes.ok) throw new Error("Wishlist API error: " + wishlistRes.status);
+
         const gamesData: Game[] = await gamesRes.json();
         const libraryData: Game[] = await libraryRes.json();
         const wishlistData: Game[] = await wishlistRes.json();
+
         setGames(gamesData);
         if (gamesData.length > 0) setSelected(gamesData[0]);
         setMine(libraryData.map((g) => g.id));
         setWishlist(wishlistData.map((g) => g.id));
       } catch (error) {
         console.error("Failed to fetch data:", error);
+        // Fallback to static data if API/database unavailable
+        const { games: staticGames } = await import("@/lib/staticData");
+        setGames(staticGames);
+        setSelected(staticGames[0]);
+        setMine(["genshin", "freefire", "mobilelegends", "valorant"]);
+        setWishlist(["minecraft"]);
       } finally {
         setLoading(false);
       }
