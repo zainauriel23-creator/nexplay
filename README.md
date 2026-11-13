@@ -13,10 +13,22 @@ Flow pendukung: Library, Wishlist, Profile, pengaturan, FAQ, dan simulasi Top Up
 
 ```bash
 npm install
+```
+
+5. Setup database MySQL (XAMPP atau instal MySQL manual), lalu jalankan:
+
+```bash
+npx prisma db push     # buat tabel
+npx prisma db seed     # isi data dummy (opsional)
+```
+
+6. Jalankan dev server:
+
+```bash
 npm run dev
 ```
 
-5. Buka http://localhost:3000
+7. Buka http://localhost:3000
 
 Untuk production build:
 
@@ -40,21 +52,41 @@ npm start
 ```text
 nexplay/
 ├── app/
-│   ├── globals.css        # seluruh styling (custom CSS)
-│   ├── layout.tsx          # root layout & metadata
-│   └── page.tsx            # komponen utama & routing state
+│   ├── api/                  # API routes (Prisma → MySQL)
+│   │   ├── games/
+│   │   │   ├── route.ts      # GET /api/games
+│   │   │   └── [id]/route.ts # GET /api/games/:id
+│   │   ├── library/route.ts  # GET/POST/DELETE /api/library
+│   │   └── wishlist/route.ts # GET/POST/DELETE /api/wishlist
+│   ├── globals.css           # seluruh styling (custom CSS)
+│   ├── layout.tsx            # root layout & metadata
+│   └── page.tsx             # komponen utama & routing state
 ├── components/
-│   ├── Cover.tsx           # cover game (gradien + inisial)
-│   ├── Empty.tsx           # empty state
-│   ├── GameCard.tsx        # kartu game di grid
-│   ├── LibraryRow.tsx      # baris game di library
-│   ├── PageHeading.tsx     # judul halaman
-│   └── SubPage.tsx         # sub-halaman dengan tombol kembali
+│   ├── Cover.tsx            # cover game (gradien + inisial)
+│   ├── Empty.tsx            # empty state
+│   ├── GameCard.tsx          # kartu game di grid
+│   ├── LibraryRow.tsx        # baris game di library
+│   ├── PageHeading.tsx       # judul halaman
+│   └── SubPage.tsx           # sub-halaman dengan tombol kembali
 ├── lib/
-│   ├── data.ts             # data dummy (games, kategori, server, FAQ)
-│   └── types.ts            # tipe Game & Page
+│   ├── data.ts              # data statis (kategori, server, FAQ)
+│   ├── prisma.ts            # Prisma client singleton
+│   └── types.ts              # tipe Game & Page
+├── prisma/
+│   ├── schema.prisma        # skema database (MySQL)
+│   └── seed.cjs              # script seeding data dummy
+├── .env                     # DATABASE_URL (TIDAK di-commit)
 ├── .gitignore
 ├── package.json
 ├── tsconfig.json
 └── README.md
 ```
+
+## Database
+
+Project menggunakan MySQL (via XAMPP/standalone) dengan Prisma ORM sebagai layer akses data.
+
+- **Connection string**: `DATABASE_URL` di file `.env` (tidak di-commit ke git)
+- **Schema**: `prisma/schema.prisma` — model Game, User, LibraryItem, WishlistItem, TopupTransaction
+- **Seed**: `prisma/seed.cjs` — mengisi 8 game, 1 demo user, 4 library items, 1 wishlist item
+- **API routes**: server-side, terhubung ke MySQL via Prisma client
