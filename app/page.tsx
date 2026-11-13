@@ -14,26 +14,28 @@ import { LibraryRow } from "@/components/LibraryRow";
 import { PageHeading } from "@/components/PageHeading";
 import { SubPage } from "@/components/SubPage";
 import {
-  categories, faqEntries, games, languages, servers, serverLabels, topupOptions,
+  categories, faqEntries, languages, servers, serverLabels, topupOptions,
 } from "@/lib/data";
 import type { Game, Page } from "@/lib/types";
 
 export default function NexPlay() {
   const [page, setPage] = useState<Page>("home");
   const [previousPage, setPreviousPage] = useState<Page>("home");
-  const [selected, setSelected] = useState<Game>(games[0]);
+  const [games, setGames] = useState<Game[]>([]);
+  const [selected, setSelected] = useState<Game | null>(null);
   const [category, setCategory] = useState("Semua");
   const [query, setQuery] = useState("");
   const [server, setServer] = useState("");
   const [tab, setTab] = useState<"mine" | "wishlist">("mine");
-  const [mine, setMine] = useState<string[]>(["genshin", "freefire", "mobilelegends", "valorant"]);
-  const [wishlist, setWishlist] = useState<string[]>(["minecraft"]);
+  const [mine, setMine] = useState<string[]>([]);
+  const [wishlist, setWishlist] = useState<string[]>([]);
   const [notice, setNotice] = useState("");
   const [language, setLanguage] = useState("Bahasa Indonesia");
   const [topupAmount, setTopupAmount] = useState(topupOptions[0]);
   const [accountId, setAccountId] = useState("");
   const [showLogout, setShowLogout] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   // -- Loading screen animation --
   useEffect(() => {
@@ -49,6 +51,31 @@ export default function NexPlay() {
     };
   }, [page]);
 
+  // -- Fetch data from API on mount --
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const [gamesRes, libraryRes, wishlistRes] = await Promise.all([
+          fetch("/api/games"),
+          fetch("/api/library"),
+          fetch("/api/wishlist"),
+        ]);
+        const gamesData: Game[] = await gamesRes.json();
+        const libraryData: Game[] = await libraryRes.json();
+        const wishlistData: Game[] = await wishlistRes.json();
+        setGames(gamesData);
+        if (gamesData.length > 0) setSelected(gamesData[0]);
+        setMine(libraryData.map((g) => g.id));
+        setWishlist(wishlistData.map((g) => g.id));
+      } catch (error) {
+        console.error("Failed to fetch data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
   const filtered = useMemo(
     () =>
       games.filter(
@@ -56,7 +83,7 @@ export default function NexPlay() {
           (category === "Semua" || g.genre === category) &&
           g.name.toLowerCase().includes(query.toLowerCase())
       ),
-    [category, query]
+    [games, category, query]
   );
 
   function openGame(game: Game) {
@@ -74,12 +101,21 @@ export default function NexPlay() {
     window.setTimeout(() => setNotice(""), 2600);
   }
 
-  function toggleWishlist(id: string) {
+  async function toggleWishlist(id: string) {
     const removing = wishlist.includes(id);
     setWishlist((old) =>
       removing ? old.filter((x) => x !== id) : [...old, id]
     );
     toast(removing ? "Dihapus dari Wishlist" : "Ditambahkan ke Wishlist");
+    try {
+      await fetch("/api/wishlist", {
+        method: removing ? "DELETE" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gameId: id }),
+      });
+    } catch (error) {
+      console.error("Wishlist API error:", error);
+    }
   }
 
   function nav(target: Page) {
@@ -102,8 +138,19 @@ export default function NexPlay() {
     setPage("loading");
   }
 
-  const selectedInWishlist = wishlist.includes(selected.id);
+  const selectedInWishlist = selected ? wishlist.includes(selected.id) : false;
   const isMain = ["home", "explore", "library", "profile"].includes(page);
+
+  // -- Loading data screen (must be before all other screens for type safety) --
+  if (loading || !selected)
+    return (
+      <main className="launch-screen">
+        <div className="launch-logo"><Gamepad2 size={36} /></div>
+        <h1>Nex<span>Play</span></h1>
+        <div className="loader"><i /></div>
+        <small>Memuat data game…</small>
+      </main>
+    );
 
   // -- Loading screen --
   if (page === "loading")
@@ -441,7 +488,14 @@ export default function NexPlay() {
                       game={g}
                       action="Mainkan"
                       onClick={() => openGame(g)}
-                      onRemove={() => setMine((old) => old.filter((x) => x !== g.id))}
+                      onRemove={() => {
+                        setMine((old) => old.filter((x) => x !== g.id));
+                        fetch("/api/library", {
+                          method: "DELETE",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ gameId: g.id }),
+                        });
+                      }}
                     />
                   ))}
                 </div>
