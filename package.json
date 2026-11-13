@@ -5,19 +5,10 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "db:generate": "prisma generate",
-    "db:push": "prisma db push",
-    "db:seed": "node prisma/seed.cjs",
-    "postinstall": "prisma generate"
-  },
-  "prisma": {
-    "seed": "node prisma/seed.cjs"
+    "start": "next start"
   },
   "dependencies": {
-    "@prisma/client": "^6.19.3",
     "lucide-react": "^0.468.0",
-    "mysql2": "^3.24.6",
     "next": "^15.1.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
@@ -26,7 +17,6 @@
     "@types/node": "^22.10.5",
     "@types/react": "^19.0.3",
     "@types/react-dom": "^19.0.3",
-    "prisma": "^6.19.3",
     "typescript": "^5.7.2"
   }
 }
